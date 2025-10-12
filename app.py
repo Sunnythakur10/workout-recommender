@@ -633,9 +633,22 @@ def main():
         plan_id = st.session_state.current_plan_id
         confidence = st.session_state.current_confidence
         
+        # Adapt the plan to the user's desired days per week
+        try:
+            adapted_week = model_utils.adapt_week_plan(plan, days_per_week, keep_rest_days=True)
+            # Create adapted plan with modified week
+            adapted_plan = plan.copy()
+            adapted_plan['week'] = adapted_week
+            plan = adapted_plan  # Use adapted plan for display
+        except Exception as e:
+            st.warning(f"⚠️ Could not adapt plan to {days_per_week} days/week: {str(e)}. Showing original plan.")
+        
         # Plan info section
         st.markdown("---")
         st.markdown("## 📋 Your Recommended Workout Plan")
+        
+        # Calculate active days from adapted plan
+        active_training_days = len([d for d in plan['week'] if d.get('exercises') and d.get('focus') != 'Rest Day'])
         
         # Plan summary
         st.markdown(f'''
@@ -644,7 +657,7 @@ def main():
             <p><strong>Plan ID:</strong> {plan_id} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>AI Confidence:</strong> {format_confidence(confidence)}</p>
             <p><strong>🎯 Target:</strong> {plan['meta']['goal'].replace('_', ' ').title()}</p>
             <p><strong>🏋️ Equipment:</strong> {plan['meta']['equipment'].title()} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>📈 Level:</strong> {plan['meta']['experience'].title()}</p>
-            <p><strong>⏱️ Duration:</strong> {plan['meta']['time_per_day']} min/session &nbsp;&nbsp;|&nbsp;&nbsp; <strong>📅 Schedule:</strong> {len([d for d in plan['week'] if d.get('exercises')])} active days</p>
+            <p><strong>⏱️ Duration:</strong> {plan['meta']['time_per_day']} min/session &nbsp;&nbsp;|&nbsp;&nbsp; <strong>📅 Schedule:</strong> {active_training_days} active days, {7 - active_training_days} rest days</p>
         </div>
         ''', unsafe_allow_html=True)
         
@@ -661,7 +674,7 @@ def main():
             - **Experience:** {plan['meta']['experience'].title()} level
             - **Duration:** {plan['meta']['time_per_day']} minutes per session
             
-            The plan includes {len(plan['week'])} days of structured workouts targeting your specific goals.
+            The plan has been adapted to your preferred {days_per_week} days/week schedule with {active_training_days} training days and {7 - active_training_days} rest days.
             """)
         
         # Weekly plan display
@@ -677,15 +690,14 @@ def main():
         # Summary statistics
         with st.expander("📊 Plan Statistics", expanded=False):
             total_exercises = sum(len(day.get('exercises', [])) for day in plan['week'])
-            active_days = len([day for day in plan['week'] if day.get('exercises')])
             
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric("Total Exercises", total_exercises)
             with col2:
-                st.metric("Active Days", active_days)
+                st.metric("Training Days", active_training_days)
             with col3:
-                st.metric("Rest Days", 7 - active_days)
+                st.metric("Rest Days", 7 - active_training_days)
             
             # Exercise breakdown by body part
             body_parts = {}

@@ -11,7 +11,8 @@ A machine learning-powered workout recommendation system with an interactive Str
 🤖 **AI-Powered Recommendations**: Uses a trained RandomForest model to suggest personalized workout plans
 💪 **Comprehensive Exercise Database**: 300+ exercises with equipment and body part targeting
 🎯 **User Personalization**: Customizable based on goals, equipment, experience, and preferences
-📱 **Interactive Web Interface**: Beautiful Streamlit app with responsive design
+� **Smart Schedule Adaptation**: Automatically adapts 7-day plans to your preferred training frequency (3-7 days/week)
+�📱 **Interactive Web Interface**: Beautiful Streamlit app with responsive design
 🔄 **Plan Variations**: Generate multiple variations based on exercise preferences
 
 ## Quick Start
@@ -53,9 +54,10 @@ workout-recommender/
 
 1. **User Input**: Users specify their fitness goals, available equipment, experience level, time constraints, and exercise preferences
 2. **AI Prediction**: The trained model analyzes the profile and predicts the most suitable workout plan
-3. **Plan Generation**: The system retrieves the recommended plan template with specific exercises
-4. **Personalization**: Plans are customized based on liked/disliked exercises
-5. **Interactive Display**: The web interface shows a complete 7-day workout schedule
+3. **Plan Adaptation**: Plans are automatically adapted to the user's preferred training frequency (3-7 days/week)
+4. **Plan Generation**: The system retrieves the recommended plan template with specific exercises
+5. **Personalization**: Plans are customized based on liked/disliked exercises
+6. **Interactive Display**: The web interface shows a complete weekly workout schedule with training and rest days
 
 ## Usage Examples
 

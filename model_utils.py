@@ -406,6 +406,135 @@ def get_model_info() -> Dict[str, Any]:
             'error': str(e)
         }
 
+def adapt_week_plan(plan: dict, days_per_week: int, keep_rest_days: bool = True) -> list:
+    """
+    Adapt a 7-day workout plan to a specific number of training days per week.
+    
+    This function takes a workout plan template and returns a modified week schedule
+    with exactly the specified number of training days, evenly distributed across
+    the week. Non-training days can either be marked as rest days or removed entirely.
+    
+    Args:
+        plan (dict): Plan dictionary containing 'week' key with 7-day list
+        days_per_week (int): Number of training days desired (1-7)
+        keep_rest_days (bool): If True, return 7-day list with rest days filled in.
+                              If False, return only training days (length N)
+    
+    Returns:
+        list: Modified week schedule
+            - If keep_rest_days=True: 7-element list with training days and rest days
+            - If keep_rest_days=False: N-element list with only training days
+    
+    Raises:
+        ValueError: If days_per_week <= 0
+        KeyError: If plan doesn't contain 'week' key
+    
+    Examples:
+        >>> # Original 7-day plan
+        >>> plan = {
+        ...     'week': [
+        ...         {'day': 1, 'focus': 'Upper Body', 'exercises': ['Push Up']},
+        ...         {'day': 2, 'focus': 'Lower Body', 'exercises': ['Squat']},
+        ...         {'day': 3, 'focus': 'Cardio', 'exercises': ['Running']},
+        ...         {'day': 4, 'focus': 'Upper Body', 'exercises': ['Pull Up']},
+        ...         {'day': 5, 'focus': 'Lower Body', 'exercises': ['Deadlift']},
+        ...         {'day': 6, 'focus': 'Full Body', 'exercises': ['Burpee']},
+        ...         {'day': 7, 'focus': 'Cardio', 'exercises': ['Cycling']}
+        ...     ]
+        ... }
+        >>> 
+        >>> # Get 4 training days with rest days
+        >>> adapted = adapt_week_plan(plan, 4, keep_rest_days=True)
+        >>> len(adapted)  # Returns 7
+        7
+        >>> 
+        >>> # Get 3 training days only
+        >>> adapted = adapt_week_plan(plan, 3, keep_rest_days=False)
+        >>> len(adapted)  # Returns 3
+        3
+    """
+    
+    # Validate inputs
+    if days_per_week <= 0:
+        raise ValueError(f"days_per_week must be positive, got {days_per_week}")
+    
+    if 'week' not in plan:
+        raise KeyError("Plan must contain 'week' key with workout days")
+    
+    original_week = plan['week']
+    
+    # Handle edge cases
+    if not original_week:
+        if keep_rest_days:
+            return [{"day": i+1, "focus": "Rest Day", "exercises": []} for i in range(7)]
+        else:
+            return []
+    
+    # Clamp days_per_week to maximum available or 7
+    max_days = min(len(original_week), 7)
+    days_per_week = min(days_per_week, max_days)
+    
+    # If requesting all 7 days (or all available days), return original
+    if days_per_week >= len(original_week) and len(original_week) >= 7:
+        if keep_rest_days:
+            # Ensure we have exactly 7 days
+            result = original_week[:7]
+            while len(result) < 7:
+                result.append({"day": len(result) + 1, "focus": "Rest Day", "exercises": []})
+            return result
+        else:
+            return original_week[:days_per_week]
+    
+    # Calculate evenly distributed indices
+    if days_per_week == 1:
+        selected_indices = [0]  # Just take the first day
+    else:
+        # Use linspace-like distribution to spread days evenly
+        import math
+        step = (len(original_week) - 1) / (days_per_week - 1)
+        selected_indices = []
+        for i in range(days_per_week):
+            idx = round(i * step)
+            idx = min(idx, len(original_week) - 1)  # Ensure within bounds
+            if idx not in selected_indices:  # Avoid duplicates
+                selected_indices.append(idx)
+        
+        # If we have duplicates due to rounding, fill gaps
+        while len(selected_indices) < days_per_week:
+            for i in range(len(original_week)):
+                if i not in selected_indices:
+                    selected_indices.append(i)
+                    break
+        
+        # Sort to maintain order and trim to exact count
+        selected_indices = sorted(selected_indices[:days_per_week])
+    
+    # Build the result
+    if keep_rest_days:
+        # Create 7-day schedule with training days and rest days
+        final_week = []
+        selected_set = set(selected_indices)
+        
+        for day_idx in range(7):
+            if day_idx < len(original_week) and day_idx in selected_set:
+                # Copy training day, ensure day number is correct
+                training_day = original_week[day_idx].copy()
+                training_day['day'] = day_idx + 1
+                final_week.append(training_day)
+            else:
+                # Add rest day
+                final_week.append({
+                    "day": day_idx + 1,
+                    "focus": "Rest Day",
+                    "exercises": []
+                })
+        
+        return final_week
+    else:
+        # Return only selected training days
+        return [original_week[i] for i in selected_indices]
+
+
 if __name__ == "__main__":
     # Demo usage
     print("=" * 60)
@@ -446,6 +575,90 @@ if __name__ == "__main__":
             print(f"   Error during prediction: {e}")
     else:
         print("\n3. Skipping prediction demo (model not loaded)")
+    
+    # Test adapt_week_plan function
+    print("\n5. Testing adapt_week_plan Function:")
+    
+    # Create a sample 7-day plan for testing
+    sample_plan = {
+        'meta': {'name': 'Test Plan'},
+        'week': [
+            {'day': 1, 'focus': 'Upper Body', 'exercises': ['Push Up', 'Pull Up']},
+            {'day': 2, 'focus': 'Lower Body', 'exercises': ['Squat', 'Lunge']},
+            {'day': 3, 'focus': 'Cardio', 'exercises': ['Running', 'Jumping Jacks']},
+            {'day': 4, 'focus': 'Upper Body', 'exercises': ['Bench Press', 'Row']},
+            {'day': 5, 'focus': 'Lower Body', 'exercises': ['Deadlift', 'Calf Raises']},
+            {'day': 6, 'focus': 'Full Body', 'exercises': ['Burpee', 'Mountain Climbers']},
+            {'day': 7, 'focus': 'Cardio', 'exercises': ['Cycling', 'Swimming']}
+        ]
+    }
+    
+    # Test cases
+    test_cases = [
+        (4, True, "4 days with rest days"),
+        (3, True, "3 days with rest days"), 
+        (7, True, "7 days (all days)"),
+        (8, True, "8 days (clamped to 7)"),
+        (4, False, "4 days only (no rest)"),
+        (3, False, "3 days only (no rest)")
+    ]
+    
+    for days, keep_rest, description in test_cases:
+        try:
+            result = adapt_week_plan(sample_plan, days, keep_rest)
+            training_days = sum(1 for day in result if day.get('focus') != 'Rest Day')
+            print(f"   {description}: {len(result)} total days, {training_days} training days")
+            
+            # Show which days are training days
+            training_focuses = [day.get('focus', 'Unknown') for day in result if day.get('focus') != 'Rest Day']
+            print(f"     Training focuses: {training_focuses}")
+            
+        except Exception as e:
+            print(f"   {description}: ERROR - {e}")
+    
+    # Unit test assertions
+    print("\n6. Unit Test Assertions:")
+    try:
+        # Test N=4 with rest days
+        result_4 = adapt_week_plan(sample_plan, 4, True)
+        assert len(result_4) == 7, f"Expected 7 days, got {len(result_4)}"
+        training_count_4 = sum(1 for day in result_4 if day.get('focus') != 'Rest Day')
+        assert training_count_4 == 4, f"Expected 4 training days, got {training_count_4}"
+        print("   ✓ N=4 with rest days: PASSED")
+        
+        # Test N=3 without rest days
+        result_3 = adapt_week_plan(sample_plan, 3, False)
+        assert len(result_3) == 3, f"Expected 3 days, got {len(result_3)}"
+        assert all(day.get('focus') != 'Rest Day' for day in result_3), "Should contain only training days"
+        print("   ✓ N=3 without rest days: PASSED")
+        
+        # Test N=7 (all days)
+        result_7 = adapt_week_plan(sample_plan, 7, True)
+        assert len(result_7) == 7, f"Expected 7 days, got {len(result_7)}"
+        training_count_7 = sum(1 for day in result_7 if day.get('focus') != 'Rest Day')
+        assert training_count_7 == 7, f"Expected 7 training days, got {training_count_7}"
+        print("   ✓ N=7 (all days): PASSED")
+        
+        # Test N>7 clamped to 7
+        result_8 = adapt_week_plan(sample_plan, 8, True)
+        assert len(result_8) == 7, f"Expected 7 days, got {len(result_8)}"
+        training_count_8 = sum(1 for day in result_8 if day.get('focus') != 'Rest Day')
+        assert training_count_8 == 7, f"Expected 7 training days, got {training_count_8}"
+        print("   ✓ N>7 clamped to 7: PASSED")
+        
+        # Test error case
+        try:
+            adapt_week_plan(sample_plan, 0, True)
+            assert False, "Should have raised ValueError for days_per_week=0"
+        except ValueError:
+            print("   ✓ ValueError for days_per_week=0: PASSED")
+        
+        print("   🎉 All unit tests PASSED!")
+        
+    except AssertionError as e:
+        print(f"   ❌ Unit test FAILED: {e}")
+    except Exception as e:
+        print(f"   ❌ Unit test ERROR: {e}")
     
     print("\n" + "=" * 60)
     print("DEMO COMPLETED")
