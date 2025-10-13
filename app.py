@@ -578,10 +578,14 @@ def main():
         st.markdown(f"⏱️ **Time:** {time_per_day} min/day")
         st.markdown(f"📅 **Frequency:** {days_per_week} days/week")
         
-        if liked_exercises:
-            st.markdown(f"❤️ **Likes:** {', '.join(liked_exercises[:3])}{'...' if len(liked_exercises) > 3 else ''}")
-        if disliked_exercises:
-            st.markdown(f"❌ **Avoids:** {', '.join(disliked_exercises[:3])}{'...' if len(disliked_exercises) > 3 else ''}")
+        # Use session state preferences if available (from last generated/regenerated plan), otherwise current sidebar values
+        display_liked = getattr(st.session_state, 'liked_exercises', liked_exercises)
+        display_disliked = getattr(st.session_state, 'disliked_exercises', disliked_exercises)
+        
+        if display_liked:
+            st.markdown(f"❤️ **Likes:** {', '.join(display_liked[:3])}{'...' if len(display_liked) > 3 else ''}")
+        if display_disliked:
+            st.markdown(f"❌ **Avoids:** {', '.join(display_disliked[:3])}{'...' if len(display_disliked) > 3 else ''}")
     
     with col1:
         # Generate Plan button
@@ -613,6 +617,10 @@ def main():
                 
                 with st.spinner("🎨 Personalizing your workout plan..."):
                     try:
+                        # Update session state with current preferences
+                        st.session_state.liked_exercises = liked_exercises
+                        st.session_state.disliked_exercises = disliked_exercises
+                        
                         # Personalize the plan
                         personalized_plan = model_utils.personalize_plan(
                             st.session_state.current_plan,
