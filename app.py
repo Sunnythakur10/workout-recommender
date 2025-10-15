@@ -578,10 +578,21 @@ def main():
         st.markdown(f"⏱️ **Time:** {time_per_day} min/day")
         st.markdown(f"📅 **Frequency:** {days_per_week} days/week")
         
+        # Show recommended plan if one exists
+        if hasattr(st.session_state, 'current_plan') and hasattr(st.session_state, 'current_plan_id'):
+            plan_name = st.session_state.current_plan['meta']['name']
+            confidence = st.session_state.current_confidence
+            st.markdown("---")
+            st.markdown("### 🎯 Recommended Plan")
+            st.markdown(f"**{plan_name}**")
+            st.markdown(f"*Confidence: {confidence:.1%}*")
+        
         # Use session state preferences if available (from last generated/regenerated plan), otherwise current sidebar values
         display_liked = getattr(st.session_state, 'liked_exercises', liked_exercises)
         display_disliked = getattr(st.session_state, 'disliked_exercises', disliked_exercises)
         
+        if display_liked or display_disliked:
+            st.markdown("---")
         if display_liked:
             st.markdown(f"❤️ **Likes:** {', '.join(display_liked[:3])}{'...' if len(display_liked) > 3 else ''}")
         if display_disliked:
