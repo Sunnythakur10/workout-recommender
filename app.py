@@ -414,19 +414,8 @@ def render_exercise_card(exercise: Dict[str, Any], show_images: bool = True):
                 st.caption(" • ".join(details))
         
         with col2:
-            # Show GIF if available and enabled
-            if show_images:
-                if exercise.get('gif_url') and pd.notna(exercise['gif_url']) and str(exercise['gif_url']).strip() and str(exercise['gif_url']).strip().lower() != 'nan':
-                    try:
-                        st.image(exercise['gif_url'], width=100, caption="Exercise Demo")
-                        st.caption("🎬 GIF loaded")
-                    except Exception as e:
-                        st.caption("❌ GIF failed to load")
-                        st.caption(f"URL: {exercise['gif_url'][:30]}...")
-                else:
-                    st.caption("📷 No image available")
-            else:
-                st.caption("💪 Exercise")
+            # Display exercise icon
+            st.caption("💪 Exercise")
         
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -538,25 +527,8 @@ def main():
         disliked_exercises = []
         st.sidebar.warning("Could not load exercise list")
     
-    # Display options
-    st.sidebar.header("🎨 Display Options")
-    show_images = st.sidebar.checkbox(
-        "Show exercise images/GIFs", 
-        value=True,
-        help="Toggle to show/hide exercise demonstration images when available"
-    )
-    
-    # Show status of image display and statistics
-    image_stats = get_image_statistics()
-    
-    if show_images:
-        st.sidebar.success("📷 Images enabled")
-        if image_stats['with_images'] > 0:
-            st.sidebar.info(f"🖼️ {image_stats['with_images']}/{image_stats['total']} exercises have images ({image_stats['percentage']:.1f}%)")
-        else:
-            st.sidebar.warning("⚠️ No exercise images found in database")
-    else:
-        st.sidebar.info("📷 Images disabled")
+    # Images are disabled by default
+    show_images = False
     
     # Create user profile
     user_profile = {
